@@ -1,0 +1,21 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов: IoT Gateway Service
+
+Container_Boundary(iotGateway, "IoT Gateway") {
+    Component(mqttAdapter, "MQTT Adapter", "Eclipse Paho", "MQTT 3.1.1")
+    Component(coapAdapter, "CoAP Adapter", "Californium", "CoAP RFC7252")
+    Component(commandQueue, "Command Queue", "RabbitMQ", "Очередь команд")
+    Component(protocolTranslator, "Protocol Translator", "Kotlin", "Конвертация форматов")
+}
+
+Rel(mqttAdapter, protocolTranslator, "MQTT → Internal", "JSON")
+Rel(coapAdapter, protocolTranslator, "CoAP → Internal", "CBOR")
+Rel(protocolTranslator, commandQueue, "Буферизация", "")
+Rel(protocolTranslator, kafka, "Телеметрия", "Avro")
+
+Rel_L(kafka, commandQueue, "Команды устройствам", "")
+Rel_R(mqttAdapter, devices, "Двусторонняя связь", "MQTT")
+Rel_R(coapAdapter, devices, "Двусторонняя связь", "CoAP")
+@enduml

@@ -1,0 +1,78 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+' === Основные участники ===
+Person(user, "Пользователь", "Управляет умным домом")
+Person(admin, "Администратор", "Конфигурирует систему")
+
+' === Границы системы ===
+System_Boundary("SmartHomeSystem", "Система умного дома") {
+    ' --- API Gateway ---
+    Container(apiGateway, "API Gateway", "Kong", "Единая точка входа")
+
+    ' --- Основные сервисы ---
+    Container(deviceOrchestrator, "Device Orchestrator", "Spring", "Оркестрация команд")
+    Container(sensorService, "Sensor Service", "Spring", "Агрегация данных")
+    Container(deviceService, "Device Service", "Spring", "Управление устройствами")
+    Container(userService, "User Service", "Spring", "Аутентификация")
+    Container(scenarioService, "Scenario Service", "Spring", "Сценарии автоматизации")
+    Container(notificationService, "Notification Service", "Spring", "Уведомления")
+
+    ' --- Новый сервис ---
+    Container(iotGateway, "IoT Gateway Service", "Spring/Kotlin", "Адаптация протоколов, кэширование, балансировка нагрузки")
+
+    ' --- Базы данных ---
+    ContainerDb(userDb, "User DB", "PostgreSQL")
+    ContainerDb(sensorDb, "Sensor DB", "InfluxDB")
+    ContainerDb(deviceDb, "Device DB", "MongoDB")
+    ContainerDb(scenarioDb, "Scenario DB", "PostgreSQL")
+
+    ' --- Интеграции ---
+    SystemQueue(kafka, "Event Bus", "Kafka")
+}
+
+' === Внешние системы ===
+System_Ext(devices, "IoT Устройства", "Датчики, реле, камеры")
+
+' === Взаимодействия ===
+' Пользовательские запросы
+Rel(user, apiGateway, "Управление", "HTTPS")
+Rel(admin, apiGateway, "Администрирование", "HTTPS")
+
+' Маршрутизация API Gateway
+Rel_R(apiGateway, deviceOrchestrator, "Команды", "gRPC")
+Rel_R(apiGateway, sensorService, "Данные", "gRPC")
+Rel_R(apiGateway, deviceService, "Управление", "gRPC")
+Rel_R(apiGateway, userService, "Auth", "gRPC")
+Rel_R(apiGateway, scenarioService, "Сценарии", "gRPC")
+Rel_R(apiGateway, notificationService, "Уведомления", "gRPC")
+
+' Взаимодействие сервисов через Kafka
+Rel(deviceOrchestrator, kafka, "События", "Avro")
+Rel(deviceService, kafka, "Состояния", "Avro")
+Rel(kafka, sensorService, "Данные", "Avro")
+Rel(kafka, notificationService, "События", "Avro")
+
+' Новые связи IoT Gateway
+Rel(kafka, iotGateway, "Команды устройствам", "Avro")
+Rel(iotGateway, kafka, "Телеметрия", "Avro")
+BiRel(iotGateway, devices, "MQTT/CoAP/Modbus", "Двусторонняя связь")
+
+' Работа с БД
+Rel_D(userService, userDb, "CRUD", "JDBC")
+Rel_D(sensorService, sensorDb, "TS-данные", "HTTP")
+Rel_D(deviceService, deviceDb, "CRUD", "Mongo")
+Rel_D(scenarioService, scenarioDb, "CRUD", "JDBC")
+
+' === Легенда ===
+SHOW_LEGEND()
+
+' === Дополнительные пояснения ===
+note right of iotGateway
+  **Функции IoT Gateway:**
+  1. Конвертация протоколов
+  2. Кэширование команд
+  3. Оффлайн-работа
+  4. Балансировка нагрузки
+end note
+@enduml

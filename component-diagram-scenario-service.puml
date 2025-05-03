@@ -1,0 +1,20 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов: Scenario Service
+
+Container_Boundary(scenarioService, "Scenario Service") {
+    Component(api, "Scenario API", "Spring GraphQL", "GraphQL API")
+    Component(engine, "Scenario Engine", "Kotlin", "Исполнение сценариев")
+    Component(scheduler, "Scheduler", "Quartz", "Планирование")
+    Component(versioner, "Version Control", "Git", "Хранение версий")
+}
+
+Rel(api, engine, "Активация сценария", "ScenarioDTO")
+Rel(engine, scheduler, "Планирование", "CronExpression")
+Rel(engine, versioner, "Сохранение", "Git Ops")
+Rel(engine, kafka, "Триггеры событий", "ScenarioEvent")
+
+Rel_R(apiGateway, api, "Управление", "GraphQL")
+Rel_L(engine, deviceOrchestrator, "Вызов команд", "gRPC")
+@enduml

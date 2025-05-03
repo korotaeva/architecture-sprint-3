@@ -1,0 +1,20 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов: Sensor Service
+
+Container_Boundary(sensorService, "Sensor Service") {
+    Component(ingest, "Data Ingest", "Spring Integration", "Прием телеметрии")
+    Component(aggregator, "Data Aggregator", "Flink", "Агрегация потоков")
+    Component(anomalyDetector, "Anomaly Detection", "Python", "ML-модели")
+    Component(query, "Query API", "Spring Data REST", "API для запросов")
+}
+
+Rel(ingest, aggregator, "Сырые данные", "TimeSeries")
+Rel(aggregator, anomalyDetector, "Агрегированные данные", "")
+Rel(aggregator, query, "Нормализованные данные", "")
+Rel(query, sensorDb, "Запросы", "HTTP")
+
+Rel_L(ingest, kafka, "Читает из топика", "SensorData")
+Rel_R(apiGateway, query, "Запросы данных", "gRPC")
+@enduml

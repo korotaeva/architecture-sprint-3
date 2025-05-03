@@ -1,0 +1,91 @@
+@startuml
+!theme plain
+skinparam linetype ortho
+
+title ER-диаграмма: Умный дом (Core Entities)
+
+' === Сущности ===
+entity "User" as user {
+  * user_id : UUID <<PK>>
+  --
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password_hash : TEXT
+  * full_name : VARCHAR(100)
+  * phone : VARCHAR(20)
+  * created_at : TIMESTAMP
+  * is_active : BOOLEAN
+}
+
+entity "House" as house {
+  * house_id : UUID <<PK>>
+  --
+  * address : TEXT
+  * timezone : VARCHAR(50)
+  * owner_id : UUID <<FK>>
+}
+
+entity "DeviceType" as device_type {
+  * type_id : UUID <<PK>>
+  --
+  * name : VARCHAR(50) <<UNIQUE>> (e.g., "Temperature Sensor")
+  * description : TEXT
+  * protocol : ENUM('MQTT', 'CoAP', 'HTTP')
+}
+
+entity "Device" as device {
+  * device_id : UUID <<PK>>
+  --
+  * name : VARCHAR(100)
+  * type_id : UUID <<FK>>
+  * house_id : UUID <<FK>>
+  * ip_address : VARCHAR(45)
+  * status : ENUM('online', 'offline', 'error')
+  * last_seen : TIMESTAMP
+}
+
+entity "Module" as module {
+  * module_id : UUID <<PK>>
+  --
+  * device_id : UUID <<FK>>
+  * name : VARCHAR(50) (e.g., "Humidity Sensor")
+  * capabilities : JSON (e.g., {"min": 0, "max": 100, "unit": "%"})
+}
+
+entity "TelemetryData" as telemetry {
+  * telemetry_id : BIGSERIAL <<PK>>
+  --
+  * module_id : UUID <<FK>>
+  * timestamp : TIMESTAMPTZ
+  * value : FLOAT
+  * raw_data : JSONB
+}
+
+' === Связи ===
+user ||--o{ house : "1:N \n(Owner)"
+house ||--o{ device : "1:N \n(Located in)"
+device_type ||--o{ device : "1:N \n(Classification)"
+device ||--o{ module : "1:N \n(Components)"
+module ||--o{ telemetry : "1:N \n(Data)"
+
+' === Индексы ===
+note top of telemetry
+  Индексы:
+  - idx_module_time (module_id, timestamp DESC)
+  - idx_house_devices (house_id, status)
+end note
+
+note right of device_type
+  Константы:
+  - MQTT: Для датчиков
+  - CoAP: Для энергоэффективных устройств
+  - HTTP: Локальные контроллеры
+end note
+
+' === Легенда ===
+legend top
+  <b>Типы связей:</b>
+  |<color:green>1:N</color>| Один-ко-многим |
+  |<color:blue>PK</color>| Первичный ключ |
+  |<color:orange>FK</color>| Внешний ключ |
+end legend
+@enduml
