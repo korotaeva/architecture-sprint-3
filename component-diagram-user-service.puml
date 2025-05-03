@@ -1,0 +1,53 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов: User Service
+
+Container_Boundary(userService, "User Service", "Spring Boot 3.2") {
+    ' --- Основные компоненты ---
+    Component(authController, "Auth Controller", "Spring MVC", "REST API для аутентификации")
+    Component(userController, "User Controller", "Spring MVC", "Управление профилями")
+    Component(roleManager, "Role Manager", "Kotlin", "RBAC-логика")
+
+    ' --- Security ---
+    Component(jwtProvider, "JWT Provider", "Java JWT", "Генерация/верификация токенов")
+    Component(oauth2Adapter, "OAuth2 Adapter", "Spring Security", "Интеграция с соцсетями")
+
+    ' --- Интеграции ---
+    Component(dbClient, "DB Client", "Spring Data JPA", "Работа с PostgreSQL")
+    Component(auditLogger, "Audit Logger", "Kotlin", "Запись аудит-логов")
+    Component(kafkaProducer, "Event Producer", "Spring Kafka", "Публикация событий")
+}
+
+' === Внутренние связи ===
+Rel(authController, jwtProvider, "Генерация токенов", "JWS")
+Rel(authController, oauth2Adapter, "Соцсети", "OIDC")
+Rel(userController, roleManager, "Проверка прав", "RBAC")
+Rel(roleManager, dbClient, "Чтение ролей", "SQL")
+Rel(authController, auditLogger, "Логирование входа", "")
+Rel(userController, kafkaProducer, "События пользователей", "Avro")
+
+' === Внешние интеграции ===
+Rel_R(apiGateway, authController, "Аутентификация", "gRPC")
+Rel_R(apiGateway, userController, "Управление профилями", "gRPC")
+Rel_L(kafkaProducer, kafka, "UserEvents", "Avro")
+Rel_D(dbClient, userDb, "CRUD операции", "JDBC")
+
+' === Особенности реализации ===
+note right of jwtProvider
+  **Алгоритм:** RS256
+  **Ключи:** 4096-bit RSA
+  **Время жизни:**
+  - Access: 15 мин
+  - Refresh: 7 дней
+end note
+
+note bottom of oauth2Adapter
+  **Поддержка:**
+  - Google OAuth2
+  - Yandex OAuth
+  - Apple Sign-In
+end note
+
+SHOW_LEGEND()
+@enduml

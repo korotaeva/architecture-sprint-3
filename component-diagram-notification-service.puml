@@ -1,0 +1,19 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов: Notification Service
+
+Container_Boundary(notificationService, "Notification Service") {
+    Component(router, "Notification Router", "Kotlin", "Маршрутизация")
+    Component(email, "Email Sender", "JavaMail", "SMTP/POP3")
+    Component(push, "Push Sender", "Firebase", "FCM/APNS")
+    Component(sms, "SMS Gateway", "Twilio", "SMS API")
+}
+
+Rel(kafka, router, "События", "NotificationEvent")
+Rel(router, email, "Email-уведомления", "HTML")
+Rel(router, push, "Push-уведомления", "JSON")
+Rel(router, sms, "SMS-уведомления", "Text")
+
+Rel_L(router, userService, "Получение контактов", "gRPC")
+@enduml

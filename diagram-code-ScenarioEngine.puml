@@ -1,0 +1,68 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма кода: ScenarioEngine (Kotlin)
+
+package "ru.yandex.smarthome.scenario" {
+    ' === Основные классы ===
+    class ScenarioEngine {
+        +execute(scenarioId: UUID): ExecutionResult
+        +validate(script: String): ValidationReport
+        -state: ExecutionState
+    }
+
+    class ScenarioDSL {
+        +parse(script: String): ScenarioAST
+        +generateTemplate(): String
+    }
+
+    class RuleEvaluator {
+        +evaluate(condition: String): Boolean
+        -useGroovyEngine()
+    }
+
+    class ActionDispatcher {
+        +dispatch(action: Action): CompletableFuture<Void>
+        -sendToKafka()
+        -callDeviceService()
+    }
+
+    ' === DTO ===
+    class ScenarioDTO {
+        +id: UUID
+        +name: String
+        +script: String
+    }
+
+    class ExecutionResult {
+        +status: Status
+        +error: String?
+    }
+}
+
+' === Взаимодействия ===
+ScenarioEngine --> ScenarioDSL : Парсит\n«script» → AST
+ScenarioEngine --> RuleEvaluator : Проверяет\nусловия
+ScenarioEngine --> ActionDispatcher : Выполняет\nдействия
+ActionDispatcher --> kafka : Отправляет\nDeviceCommand
+ActionDispatcher --> deviceOrchestrator : Вызывает gRPC
+
+' === Внешние зависимости ===
+ScenarioEngine --> ScenarioRepository : Загружает\nсценарии
+RuleEvaluator --> sensorService : Читает\nтекущие значения
+
+note top of ScenarioEngine
+**Поток выполнения:**
+1. Загрузка сценария
+2. Парсинг DSL
+3. Проверка условий
+4. Диспетчеризация действий
+end note
+
+note left of ScenarioDSL
+**Поддерживаемый синтаксис:**
+WHEN temp > 25 THEN
+  AC.set(18°C)
+  NOTIFY("Жарко!")
+end note
+@enduml

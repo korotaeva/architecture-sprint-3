@@ -1,0 +1,13 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Пользователь", "Любой пользователь системы, который имеет права к управлению")
+Person(admin, "Администратор", "Сотрудник поддержки")
+
+System(systemAlias, "Тёплый Дом", "Обрабатывает запросы пользователей и данные от датчиков")
+System_Ext(extDevices, "Устройства умного дома", "Датчики температуры и модули отопления")
+
+Rel(user, systemAlias, "Просмотр данных с датчиков, управление отоплением и температурой", "JSON/HTTPS")
+Rel(admin, systemAlias, "Удаленное управление, поддержка по запросу пользователей", "JSON/HTTPS")
+Rel(systemAlias, extDevices, "Получение данные с датчиков, управление устройствами", "JSON/IoT протоколы")
+@enduml
