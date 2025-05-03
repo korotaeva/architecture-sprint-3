@@ -1,81 +1,91 @@
 @startuml
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!theme plain
+skinparam linetype ortho
 
-title ER-диаграмма: Умный дом
+title ER-диаграмма: Умный дом (Core Entities)
 
 ' === Сущности ===
-entity "Пользователи" as users {
+entity "User" as user {
   * user_id : UUID <<PK>>
   --
   * email : VARCHAR(255) <<UNIQUE>>
   * password_hash : TEXT
   * full_name : VARCHAR(100)
   * phone : VARCHAR(20)
-  * created_at : TIMESTAMPTZ
+  * created_at : TIMESTAMP
   * is_active : BOOLEAN
 }
 
-entity "Устройства" as devices {
-  * device_id : UUID <<PK>>
-  --
-  * name : VARCHAR(100)
-  * type : ENUM('sensor', 'actuator', 'camera')
-  * status : ENUM('online', 'offline', 'error')
-  * ip_address : INET
-  * last_seen : TIMESTAMPTZ
-  * room_id : UUID <<FK>>
-}
-
-entity "Комнаты" as rooms {
-  * room_id : UUID <<PK>>
-  --
-  * name : VARCHAR(50)
-  * floor : SMALLINT
-  * home_id : UUID <<FK>>
-}
-
-entity "Дома" as homes {
-  * home_id : UUID <<PK>>
+entity "House" as house {
+  * house_id : UUID <<PK>>
   --
   * address : TEXT
   * timezone : VARCHAR(50)
   * owner_id : UUID <<FK>>
 }
 
-entity "Сценарии" as scenarios {
-  * scenario_id : UUID <<PK>>
+entity "DeviceType" as device_type {
+  * type_id : UUID <<PK>>
   --
-  * name : VARCHAR(100)
-  * trigger_condition : JSONB
-  * actions : JSONB[]
-  * is_active : BOOLEAN
-  * created_by : UUID <<FK>>
+  * name : VARCHAR(50) <<UNIQUE>> (e.g., "Temperature Sensor")
+  * description : TEXT
+  * protocol : ENUM('MQTT', 'CoAP', 'HTTP')
 }
 
-entity "Датчики" as sensors {
-  * sensor_id : UUID <<PK>>
+entity "Device" as device {
+  * device_id : UUID <<PK>>
+  --
+  * name : VARCHAR(100)
+  * type_id : UUID <<FK>>
+  * house_id : UUID <<FK>>
+  * ip_address : VARCHAR(45)
+  * status : ENUM('online', 'offline', 'error')
+  * last_seen : TIMESTAMP
+}
+
+entity "Module" as module {
+  * module_id : UUID <<PK>>
   --
   * device_id : UUID <<FK>>
-  * sensor_type : ENUM('temp', 'humidity', 'motion')
-  * last_value : FLOAT
-  * last_updated : TIMESTAMPTZ
+  * name : VARCHAR(50) (e.g., "Humidity Sensor")
+  * capabilities : JSON (e.g., {"min": 0, "max": 100, "unit": "%"})
+}
+
+entity "TelemetryData" as telemetry {
+  * telemetry_id : BIGSERIAL <<PK>>
+  --
+  * module_id : UUID <<FK>>
+  * timestamp : TIMESTAMPTZ
+  * value : FLOAT
+  * raw_data : JSONB
 }
 
 ' === Связи ===
-users ||--o{ homes : "Владеет"
-homes ||--o{ rooms : "Содержит"
-rooms ||--o{ devices : "Размещены"
-devices ||--|| sensors : "Имеет"
-users ||--o{ scenarios : "Создал"
-
-' === Связи многие-ко-многим ===
-users }o--o{ devices : "Доступ"
-scenarios }o--o{ devices : "Управляет"
+user ||--o{ house : "1:N \n(Owner)"
+house ||--o{ device : "1:N \n(Located in)"
+device_type ||--o{ device : "1:N \n(Classification)"
+device ||--o{ module : "1:N \n(Components)"
+module ||--o{ telemetry : "1:N \n(Data)"
 
 ' === Индексы ===
-note right of users
+note top of telemetry
   Индексы:
-  - idx_email (email)
-  - idx_created_at (created_at)
+  - idx_module_time (module_id, timestamp DESC)
+  - idx_house_devices (house_id, status)
 end note
+
+note right of device_type
+  Константы:
+  - MQTT: Для датчиков
+  - CoAP: Для энергоэффективных устройств
+  - HTTP: Локальные контроллеры
+end note
+
+' === Легенда ===
+legend top
+  <b>Типы связей:</b>
+  |<color:green>1:N</color>| Один-ко-многим |
+  |<color:blue>PK</color>| Первичный ключ |
+  |<color:orange>FK</color>| Внешний ключ |
+end legend
 @enduml

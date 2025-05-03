@@ -99,6 +99,6 @@
 
 Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
 [er-diagram.puml](er-diagram.puml)
-![er-diagram-ER____.png](er-diagram-ER____.png)
+![er-diagram-ER______Core_Entities_.png](er-diagram-ER______Core_Entities_.png)
 
 # ❌ Задание 4. Создание и документирование API
